@@ -1,0 +1,116 @@
+service: RetoIndraBackEnd
+frameworkVersion: '3'
+
+package:
+  individually: true
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: 'nodejs14.x'
+  region: us-east-1
+  environment:
+    FILMS_TABLE: films_table
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - arn:aws:dynamodb:us-east-1:440275756438:table/films_table
+
+functions:
+  # consulta al servicio SWAPI
+  # Obtiene las especies
+  searchSpecies:
+    handler: src/species/specie.getSpecies
+    events:
+      - httpApi:
+          path: /species
+          method: get
+          responses: {
+            200:  {
+              description: 'Successful API Response',
+            }
+          }
+  # Obtiene los vehiculos
+  getVehicles:
+    handler: src/vehicles/vehicle.getVehicles
+    events:
+      - httpApi:
+          path: /vehicles
+          method: get
+          responses: {
+            200:  {
+              description: 'Successful API Response',
+            }
+          }
+
+  # usa dynamodb
+  createFilm:
+    handler: src/films/film.createFilmController
+    events:
+      - httpApi:
+          path: /films
+          method: post
+          responses: {
+            200:  {
+              description: 'Successful API Response',
+            }
+          }
+  getFilmById:
+    handler: src/films/film.getFilmByIdController
+    events:
+      - httpApi:
+          path: /films/{id}
+          method: get
+          responses: {
+            200:  {
+              description: 'Successful API Response',
+            }
+          }
+  getFilms:
+    handler: src/films/film.getFilmsController
+    events:
+      - httpApi:
+          path: /films
+          method: get
+          responses: {
+            200:  {
+              description: 'Successful API Response',
+            }
+          }
+
+plugins:
+  - serverless-auto-swagger
+  - serverless-dotenv-plugin
+  - serverless-esbuild
+  - serverless-offline
+
+resources:
+  Resources:
+    FilmsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: FilmsTable
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+custom:
+  esbuild:
+    bundle: true
+    minify: true
+  autoswagger:
+    generateSwaggerOnDeploy: true
